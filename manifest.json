@@ -5,6 +5,7 @@
   "version": "1.0",
   "action": {
       "default_title": "Volume Control",
+      "default_popup": "html/popup.html",
       "default_icon": "icons/icon-32.png"
   },
   "icons": {
