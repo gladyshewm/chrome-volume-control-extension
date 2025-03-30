@@ -28,6 +28,10 @@ body {
     & h1 {
       margin-left: 0.5rem;
     }
+
+    &.muted svg {
+      fill: #b12626;
+    }
   }
 
   & .volume-slider {
