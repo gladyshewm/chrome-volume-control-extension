@@ -1,3 +1,21 @@
+const themeToggle = document.getElementById('theme-toggle');
+
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  themeToggle.checked = true;
+  document.body.classList.add('dark');
+} else {
+  themeToggle.checked = false;
+  document.body.classList.add('light');
+}
+
+themeToggle.addEventListener('change', () => {
+  if (themeToggle.checked) {
+    document.body.classList.replace('light', 'dark');
+  } else {
+    document.body.classList.replace('dark', 'light');
+  }
+});
+
 const slider = document.querySelector('.volume-slider__slider');
 const currentVolume = document.querySelector('.volume-info__current b');
 const muteSVG = `
@@ -40,16 +58,17 @@ const unmuteSVG = `
         >
 `;
 
-slider.addEventListener('input', () => {
+const updateSlider = () => {
   const min = slider.min;
   const max = slider.max;
   const val = slider.value;
-
   const percent = ((val - min) / (max - min)) * 100;
 
-  slider.style.background = `linear-gradient(to right, #2a9300 0%, #2a9300 ${percent}%, #333333 ${percent}%, #333333 100%)`;
+  slider.style.background = `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${percent}%, var(--btn-hover-color) ${percent}%, var(--btn-hover-color) 100%)`;
   currentVolume.innerHTML = `Volume: ${val} %`;
-});
+};
+
+slider.addEventListener('input', updateSlider);
 
 const header = document.querySelector('header');
 const muteButton = document.querySelector('.volume-actions__mute');
@@ -60,8 +79,9 @@ muteButton.addEventListener('click', () => {
     ? `${unmuteSVG}<span>Unmute</span>`
     : `${muteSVG}<span>Mute</span>`;
 
+  const headerTitle = header.querySelector('header .title');
   header.classList.toggle('muted', isMuted);
-  header.innerHTML = isMuted
+  headerTitle.innerHTML = isMuted
     ? `${muteSVG}<h1>Volume Control</h1>`
     : `${unmuteSVG}<h1>Volume Control</h1>`;
 });
@@ -70,12 +90,7 @@ const resetButton = document.querySelector('.volume-actions__reset');
 
 resetButton.addEventListener('click', () => {
   slider.value = 100;
-  const min = slider.min;
-  const max = slider.max;
-  const val = slider.value;
-  const percent = ((val - min) / (max - min)) * 100;
-  slider.style.background = `linear-gradient(to right, #2a9300 0%, #2a9300 ${percent}%, #333333 ${percent}%, #333333 100%)`;
-  currentVolume.innerHTML = `Volume: ${slider.value} %`;
+  updateSlider();
 });
 
 /* document.getElementById('volume-slider').addEventListener('input', (event) => {

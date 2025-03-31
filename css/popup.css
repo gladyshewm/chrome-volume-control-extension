@@ -1,3 +1,13 @@
+@media (prefers-color-scheme: dark) {
+  body {
+    --background-color: #121212;
+    --text-color: #d0d0d0;
+    --accent-color: #2a9300;
+    --btn-bc-color: #222222;
+    --btn-hover-color: #333333;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -9,28 +19,99 @@ html {
   font-family: 'Helvetica Neue', 'Lucida Grande', sans-serif;
 }
 
+body.light {
+  --background-color: #ffffff;
+  --text-color: #121212;
+  --accent-color: #2a9300;
+  --btn-bc-color: #e0e0e0;
+  --btn-hover-color: #d0d0d0;
+}
+
+body.dark {
+  --background-color: #121212;
+  --text-color: #d0d0d0;
+  --accent-color: #2a9300;
+  --btn-bc-color: #222222;
+  --btn-hover-color: #333333;
+}
+
 body {
   width: 24rem;
   padding: 0.8rem;
-  background-color: #121212;
-  color: silver;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: all 0.3s;
 
   & header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
 
-    & svg {
-      width: 1.8rem;
-      height: 1.8rem;
-      fill: #2a9300;
+    & .title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      & svg {
+        width: 1.8rem;
+        height: 1.8rem;
+        fill: var(--accent-color);
+      }
+
+      & h1 {
+        margin-left: 0.5rem;
+      }
     }
 
-    & h1 {
-      margin-left: 0.5rem;
-    }
-
-    &.muted svg {
+    &.muted .title svg {
       fill: #b12626;
+    }
+
+    & .theme-switch {
+      & .theme-toggle,
+      & .theme-toggle:before {
+        transition-property: background-color, transform, visibility;
+        transition-duration: 0.3s;
+        transition-timing-function: ease, cubic-bezier(0.6, 0.2, 0.4, 1.5),
+          linear;
+      }
+
+      & .theme-toggle {
+        border-radius: 1rem;
+        background: #d0d0d0;
+        cursor: pointer;
+        position: relative;
+        width: 3.15rem;
+        height: 1.6rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        -webkit-tap-highlight-color: transparent;
+
+        &:before {
+          display: block;
+          position: absolute;
+          background: #ffffff;
+          border-radius: 50%;
+          content: '';
+          top: 0.2rem;
+          left: 0.2rem;
+          width: 1.2rem;
+          height: 1.2rem;
+        }
+
+        &:checked {
+          background-color: var(--btn-hover-color);
+
+          &:before {
+            transform: translateX(1.6rem);
+          }
+        }
+
+        &:focus {
+          outline: transparent;
+        }
+      }
     }
   }
 
@@ -42,34 +123,32 @@ body {
       height: 0.5rem;
       cursor: default;
       appearance: none;
-      /* background-color: #333333; */
       border-radius: 0.3rem;
-      outline: none;
+      outline: 1px solid var(--accent-color);
       opacity: 0.7;
       background: linear-gradient(
         to right,
-        #2a9300 0%,
-        #2a9300 20%,
-        #333333 20%,
-        #333333 100%
+        var(--accent-color) 0%,
+        var(--accent-color) 20%,
+        var(--btn-hover-color) 20%,
+        var(--btn-hover-color) 100%
       );
-      transition: background 0.1s ease-in-out;
 
       &::-webkit-slider-thumb {
         appearance: none;
-        width: 1rem;
-        height: 1rem;
+        width: 1.1rem;
+        height: 1.1rem;
         border-radius: 50%;
         cursor: pointer;
-        box-shadow: 0 0 0 5px inset #2a9300;
+        box-shadow: 0 0 0 5px inset var(--accent-color);
       }
 
       &::-moz-range-thumb {
-        width: 1rem;
-        height: 1rem;
+        width: 1.1rem;
+        height: 1.1rem;
         border-radius: 50%;
         cursor: pointer;
-        box-shadow: 0 0 0 5px inset #2a9300;
+        box-shadow: 0 0 0 5px inset var(--accent-color);
       }
 
       &:hover,
@@ -102,9 +181,10 @@ body {
       padding: 0.7rem 0.5rem;
       cursor: pointer;
       border: none;
-      background-color: #222222;
-      color: #d0d0d0;
+      background-color: var(--btn-bc-color);
+      color: var(--text-color);
       border-radius: 0.3rem;
+      transition: all 0.3s;
 
       &:not(:last-child) {
         margin-right: 0.5rem;
@@ -113,12 +193,13 @@ body {
       & svg {
         width: 1.1rem;
         height: 1.1rem;
-        fill: #d0d0d0;
+        fill: var(--text-color);
         margin-right: 0.5rem;
+        transition: fill 0.3s, color 0.3s;
       }
 
       &:hover {
-        background-color: #333333;
+        background-color: var(--btn-hover-color);
       }
     }
   }
