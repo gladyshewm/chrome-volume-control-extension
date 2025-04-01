@@ -30,6 +30,16 @@ chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
       });
     return true;
   }
+
+  if (message.type === 'toggle-mute') {
+    handleToggleMute(message)
+      .then((res) => sendResponse(res))
+      .catch((err) => {
+        console.error('Error handling toggle-mute:', err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
+  }
 });
 
 async function handleStartAudio(message) {
@@ -123,5 +133,31 @@ async function handleStopAudio(message) {
   } catch (error) {
     console.error(`Error stopping audio for tab ${tabId}:`, error);
     throw new Error(`Failed to stop audio for tab ${tabId}`);
+  }
+}
+
+async function handleToggleMute(message) {
+  const { tabId, muted } = message;
+
+  if (!tabId) throw new Error('No tabId provided');
+
+  if (!audioContexts[tabId]) {
+    console.error(`No audio context found for tab ${tabId}`);
+    return { success: false, error: 'No audio context found' };
+  }
+
+  try {
+    if (muted) {
+      audioContexts[tabId].gainNode.disconnect();
+    } else {
+      audioContexts[tabId].gainNode.connect(
+        audioContexts[tabId].audioCtx.destination,
+      );
+    }
+
+    return { success: true, muted };
+  } catch (error) {
+    console.error(`Failed to toggle mute for tab ${tabId}:`, error);
+    throw new Error(`Failed to toggle mute for tab ${tabId}`);
   }
 }

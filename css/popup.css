@@ -155,6 +155,19 @@ body {
       &:focus-visible {
         opacity: 0.9;
       }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+
+        &::-webkit-slider-thumb {
+          cursor: default;
+        }
+
+        &::-moz-range-thumb {
+          cursor: default;
+        }
+      }
     }
   }
 

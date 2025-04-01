@@ -1,5 +1,6 @@
 const themeToggle = document.getElementById('theme-toggle');
 const header = document.querySelector('header');
+const headerTitle = header.querySelector('header .title');
 const muteButton = document.querySelector('.volume-actions__mute');
 const resetButton = document.querySelector('.volume-actions__reset');
 const slider = document.querySelector('.volume-slider__slider');
@@ -45,6 +46,8 @@ const unmuteSVG = `
 `;
 let currentTabId = null;
 
+// chrome.action.setBadgeText({ text: 'ON' }); //TODO:
+
 chrome.storage.local.get('theme', (data) => {
   let theme = data.theme;
 
@@ -71,20 +74,55 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
   if (tabs.length > 0) {
     currentTabId = tabs[0].id;
 
+    chrome.storage.session.get(`muted_${currentTabId}`, (data) => {
+      const isMuted = data[`muted_${currentTabId}`] || false;
+      updateMuteUI(isMuted);
+    });
+
     chrome.storage.session.get(`volume_${currentTabId}`, (data) => {
       slider.value =
         data[`volume_${currentTabId}`] !== undefined
           ? data[`volume_${currentTabId}`]
           : 1;
-
-      updateSlider();
+      updateSliderUI();
     });
 
     await startAudioCapture(currentTabId);
   }
 });
 
-async function startAudioCapture(tabId) {
+muteButton.addEventListener('click', async () => {
+  const isMuted = muteButton.classList.toggle('muted');
+
+  await chrome.storage.session.set({ [`muted_${currentTabId}`]: isMuted });
+  await muteVolumeForTab(isMuted);
+
+  updateMuteUI(isMuted);
+});
+
+resetButton.addEventListener('click', () => {
+  slider.value = 1;
+  updateVolumeForTab(1);
+  updateSliderUI();
+});
+
+slider.addEventListener('input', () => {
+  const volume = parseFloat(slider.value);
+  updateVolumeForTab(volume);
+  updateSliderUI();
+});
+
+const updateSliderUI = () => {
+  const min = slider.min;
+  const max = slider.max;
+  const val = slider.value;
+  const percent = ((val - min) / (max - min)) * 100;
+
+  slider.style.background = `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${percent}%, var(--btn-hover-color) ${percent}%, var(--btn-hover-color) 100%)`;
+  currentVolume.innerHTML = `Volume: ${~~(val * 100)} %`;
+};
+
+const startAudioCapture = async (tabId) => {
   if (!tabId) return;
 
   try {
@@ -95,44 +133,9 @@ async function startAudioCapture(tabId) {
   } catch (error) {
     console.error('Error starting audio capture:', error);
   }
-}
-
-const updateSlider = () => {
-  const min = slider.min;
-  const max = slider.max;
-  const val = slider.value;
-  const percent = ((val - min) / (max - min)) * 100;
-
-  slider.style.background = `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${percent}%, var(--btn-hover-color) ${percent}%, var(--btn-hover-color) 100%)`;
-  currentVolume.innerHTML = `Volume: ${~~(val * 100)} %`;
 };
 
-muteButton.addEventListener('click', () => {
-  const isMuted = muteButton.classList.toggle('muted');
-  muteButton.innerHTML = isMuted
-    ? `${unmuteSVG}<span>Unmute</span>`
-    : `${muteSVG}<span>Mute</span>`;
-
-  const headerTitle = header.querySelector('header .title');
-  header.classList.toggle('muted', isMuted);
-  headerTitle.innerHTML = isMuted
-    ? `${muteSVG}<h1>Volume Control</h1>`
-    : `${unmuteSVG}<h1>Volume Control</h1>`;
-});
-
-resetButton.addEventListener('click', () => {
-  slider.value = 1;
-  updateVolumeForTab(1);
-  updateSlider();
-});
-
-slider.addEventListener('input', () => {
-  const volume = parseFloat(slider.value);
-  updateVolumeForTab(volume);
-  updateSlider();
-});
-
-async function updateVolumeForTab(volume) {
+const updateVolumeForTab = async (volume) => {
   if (!currentTabId) return;
 
   try {
@@ -146,4 +149,34 @@ async function updateVolumeForTab(volume) {
   } catch (error) {
     console.error('Error updating volume:', error);
   }
-}
+};
+
+const muteVolumeForTab = async (isMuted) => {
+  if (!currentTabId) return;
+
+  try {
+    await chrome.runtime.sendMessage({
+      type: 'toggle-mute',
+      tabId: currentTabId,
+      muted: isMuted,
+    });
+  } catch (error) {
+    console.error('Error muting volume:', error);
+  }
+};
+
+const updateMuteUI = (isMuted) => {
+  header.classList.toggle('muted', isMuted);
+
+  if (isMuted) {
+    muteButton.classList.add('muted');
+    muteButton.innerHTML = `${unmuteSVG}<span>Unmute</span>`;
+    slider.setAttribute('disabled', true);
+    headerTitle.innerHTML = `${unmuteSVG}<h1>Volume Control</h1>`;
+  } else {
+    muteButton.classList.remove('muted');
+    muteButton.innerHTML = `${muteSVG}<span>Mute</span>`;
+    slider.removeAttribute('disabled');
+    headerTitle.innerHTML = `${muteSVG}<h1>Volume Control</h1>`;
+  }
+};

@@ -36,16 +36,16 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
     return true;
   }
-});
 
-chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabAudioStreams[tabId]) {
-    sendMessageToOffscreen({ type: 'stop-audio', tabId }).catch((err) =>
-      console.error('Error stopping audio:', err),
-    );
-    delete tabAudioStreams[tabId];
+  if (message.type === 'toggle-mute') {
+    handleToggleMute(message)
+      .then((res) => sendResponse(res))
+      .catch((err) => {
+        console.error('Error handling toggle-mute:', err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
   }
-  chrome.storage.session.remove(`volume_${tabId}`);
 });
 
 async function handleStartAudio(message, sender) {
@@ -80,3 +80,23 @@ async function handleUpdateGain(message) {
 
   return { success: true };
 }
+
+async function handleToggleMute(message) {
+  await sendMessageToOffscreen({
+    type: 'toggle-mute',
+    tabId: message.tabId,
+    muted: message.muted,
+  });
+
+  return { success: true };
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (tabAudioStreams[tabId]) {
+    sendMessageToOffscreen({ type: 'stop-audio', tabId }).catch((err) =>
+      console.error('Error stopping audio:', err),
+    );
+    delete tabAudioStreams[tabId];
+  }
+  chrome.storage.session.remove(`volume_${tabId}`);
+});
