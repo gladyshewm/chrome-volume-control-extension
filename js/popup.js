@@ -1,21 +1,7 @@
 const themeToggle = document.getElementById('theme-toggle');
-
-if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-  themeToggle.checked = true;
-  document.body.classList.add('dark');
-} else {
-  themeToggle.checked = false;
-  document.body.classList.add('light');
-}
-
-themeToggle.addEventListener('change', () => {
-  if (themeToggle.checked) {
-    document.body.classList.replace('light', 'dark');
-  } else {
-    document.body.classList.replace('dark', 'light');
-  }
-});
-
+const header = document.querySelector('header');
+const muteButton = document.querySelector('.volume-actions__mute');
+const resetButton = document.querySelector('.volume-actions__reset');
 const slider = document.querySelector('.volume-slider__slider');
 const currentVolume = document.querySelector('.volume-info__current b');
 const muteSVG = `
@@ -57,6 +43,59 @@ const unmuteSVG = `
           </g></svg
         >
 `;
+let currentTabId = null;
+
+chrome.storage.local.get('theme', (data) => {
+  let theme = data.theme;
+
+  if (!theme) {
+    theme = window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  }
+
+  themeToggle.checked = theme === 'dark';
+  document.body.classList.add(theme);
+});
+
+themeToggle.addEventListener('change', () => {
+  const newTheme = themeToggle.checked ? 'dark' : 'light';
+  document.body.classList.replace(
+    themeToggle.checked ? 'light' : 'dark',
+    newTheme,
+  );
+  chrome.storage.local.set({ theme: newTheme });
+});
+
+chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+  if (tabs.length > 0) {
+    currentTabId = tabs[0].id;
+
+    chrome.storage.session.get(`volume_${currentTabId}`, (data) => {
+      slider.value =
+        data[`volume_${currentTabId}`] !== undefined
+          ? data[`volume_${currentTabId}`]
+          : 1;
+
+      updateSlider();
+    });
+
+    await startAudioCapture(currentTabId);
+  }
+});
+
+async function startAudioCapture(tabId) {
+  if (!tabId) return;
+
+  try {
+    await chrome.runtime.sendMessage({
+      type: 'start-audio',
+      tabId,
+    });
+  } catch (error) {
+    console.error('Error starting audio capture:', error);
+  }
+}
 
 const updateSlider = () => {
   const min = slider.min;
@@ -65,13 +104,8 @@ const updateSlider = () => {
   const percent = ((val - min) / (max - min)) * 100;
 
   slider.style.background = `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${percent}%, var(--btn-hover-color) ${percent}%, var(--btn-hover-color) 100%)`;
-  currentVolume.innerHTML = `Volume: ${val} %`;
+  currentVolume.innerHTML = `Volume: ${~~(val * 100)} %`;
 };
-
-slider.addEventListener('input', updateSlider);
-
-const header = document.querySelector('header');
-const muteButton = document.querySelector('.volume-actions__mute');
 
 muteButton.addEventListener('click', () => {
   const isMuted = muteButton.classList.toggle('muted');
@@ -86,29 +120,30 @@ muteButton.addEventListener('click', () => {
     : `${unmuteSVG}<h1>Volume Control</h1>`;
 });
 
-const resetButton = document.querySelector('.volume-actions__reset');
-
 resetButton.addEventListener('click', () => {
-  slider.value = 100;
+  slider.value = 1;
+  updateVolumeForTab(1);
   updateSlider();
 });
 
-/* document.getElementById('volume-slider').addEventListener('input', (event) => {
-  const volume = parseFloat(event.target.value);
+slider.addEventListener('input', () => {
+  const volume = parseFloat(slider.value);
+  updateVolumeForTab(volume);
+  updateSlider();
+});
 
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]?.id) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: 'setVolume',
-        volume: volume,
-      });
-    }
-  });
-}); */
+async function updateVolumeForTab(volume) {
+  if (!currentTabId) return;
 
-/* document
-  .querySelector('.volume-actions__mute')
-  .addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'toggleMute' });
-  });
- */
+  try {
+    await chrome.storage.session.set({ [`volume_${currentTabId}`]: volume });
+
+    await chrome.runtime.sendMessage({
+      type: 'update-gain',
+      tabId: currentTabId,
+      data: volume,
+    });
+  } catch (error) {
+    console.error('Error updating volume:', error);
+  }
+}
