@@ -46,8 +46,6 @@ const unmuteSVG = `
 `;
 let currentTabId = null;
 
-// chrome.action.setBadgeText({ text: 'ON' }); //TODO:
-
 chrome.storage.local.get('theme', (data) => {
   let theme = data.theme;
 
@@ -74,17 +72,17 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
   if (tabs.length > 0) {
     currentTabId = tabs[0].id;
 
-    chrome.storage.session.get(`muted_${currentTabId}`, (data) => {
-      const isMuted = data[`muted_${currentTabId}`] || false;
-      updateMuteUI(isMuted);
-    });
+    const { [`muted_${currentTabId}`]: isMuted = false } =
+      await chrome.storage.session.get(`muted_${currentTabId}`);
+    const { [`volume_${currentTabId}`]: volume = 1 } =
+      await chrome.storage.session.get(`volume_${currentTabId}`);
 
-    chrome.storage.session.get(`volume_${currentTabId}`, (data) => {
-      slider.value =
-        data[`volume_${currentTabId}`] !== undefined
-          ? data[`volume_${currentTabId}`]
-          : 1;
-      updateSliderUI();
+    slider.value = volume;
+    updateSliderUI();
+    updateMuteUI(isMuted);
+
+    chrome.action.setBadgeText({
+      text: isMuted ? 'MUTE' : String(Math.round(volume * 100)),
     });
 
     await startAudioCapture(currentTabId);
@@ -119,7 +117,7 @@ const updateSliderUI = () => {
   const percent = ((val - min) / (max - min)) * 100;
 
   slider.style.background = `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${percent}%, var(--btn-hover-color) ${percent}%, var(--btn-hover-color) 100%)`;
-  currentVolume.innerHTML = `Volume: ${~~(val * 100)} %`;
+  currentVolume.innerHTML = `Volume: ${Math.round(val * 100)} %`;
 };
 
 const startAudioCapture = async (tabId) => {
@@ -146,6 +144,10 @@ const updateVolumeForTab = async (volume) => {
       tabId: currentTabId,
       data: volume,
     });
+
+    chrome.action.setBadgeText({
+      text: String(Math.round(volume * 100)),
+    });
   } catch (error) {
     console.error('Error updating volume:', error);
   }
@@ -159,6 +161,10 @@ const muteVolumeForTab = async (isMuted) => {
       type: 'toggle-mute',
       tabId: currentTabId,
       muted: isMuted,
+    });
+
+    chrome.action.setBadgeText({
+      text: isMuted ? 'MUTE' : String(Math.round(slider.value * 100)),
     });
   } catch (error) {
     console.error('Error muting volume:', error);

@@ -48,7 +48,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-async function handleStartAudio(message, sender) {
+const handleStartAudio = async (message, sender) => {
   let tabId = message.tabId;
 
   if (!tabId) tabId = sender.tab?.id || (await getActiveTabId());
@@ -69,9 +69,9 @@ async function handleStartAudio(message, sender) {
   });
 
   return { success: true, tabId };
-}
+};
 
-async function handleUpdateGain(message) {
+const handleUpdateGain = async (message) => {
   await sendMessageToOffscreen({
     type: 'update-gain',
     tabId: message.tabId,
@@ -79,9 +79,9 @@ async function handleUpdateGain(message) {
   });
 
   return { success: true };
-}
+};
 
-async function handleToggleMute(message) {
+const handleToggleMute = async (message) => {
   await sendMessageToOffscreen({
     type: 'toggle-mute',
     tabId: message.tabId,
@@ -89,7 +89,31 @@ async function handleToggleMute(message) {
   });
 
   return { success: true };
-}
+};
+
+const updateBadgeForActiveTab = async () => {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tabs.length === 0) return;
+
+  const tabId = tabs[0].id;
+
+  const mutedData = await chrome.storage.session.get(`muted_${tabId}`);
+  const isMuted = mutedData[`muted_${tabId}`] || false;
+
+  const volumeData = await chrome.storage.session.get(`volume_${tabId}`);
+  const volume =
+    volumeData[`volume_${tabId}`] !== undefined
+      ? volumeData[`volume_${tabId}`]
+      : 1;
+
+  chrome.action.setBadgeText({
+    text: isMuted ? 'MUTE' : String(Math.round(volume * 100)),
+  });
+};
+
+chrome.windows.onFocusChanged.addListener(updateBadgeForActiveTab);
+
+chrome.tabs.onActivated.addListener(updateBadgeForActiveTab);
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabAudioStreams[tabId]) {
