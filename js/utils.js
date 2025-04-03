@@ -47,3 +47,23 @@ export const sendMessageToOffscreen = async (message) => {
   await ensureOffscreenDocument();
   chrome.runtime.sendMessage(message);
 };
+
+export const updateBadgeForActiveTab = async () => {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tabs.length === 0) return;
+
+  const tabId = tabs[0].id;
+
+  const mutedData = await chrome.storage.session.get(`muted_${tabId}`);
+  const isMuted = mutedData[`muted_${tabId}`] || false;
+
+  const volumeData = await chrome.storage.session.get(`volume_${tabId}`);
+  const volume =
+    volumeData[`volume_${tabId}`] !== undefined
+      ? volumeData[`volume_${tabId}`]
+      : 1;
+
+  chrome.action.setBadgeText({
+    text: isMuted ? 'MUTE' : String(Math.round(volume * 100)),
+  });
+};

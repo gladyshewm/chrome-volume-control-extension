@@ -223,6 +223,33 @@ body {
 
     & .tabs__title {
       text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    & .tab-item abbr {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      padding: 0.35rem;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: var(--btn-hover-color);
+      }
+
+      & .tab-icon {
+        width: 1.15rem;
+        height: 1.15rem;
+        margin-right: 0.7rem;
+      }
+
+      & .tab-title {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+      }
     }
   }
 }

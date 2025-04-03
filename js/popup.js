@@ -5,6 +5,8 @@ const muteButton = document.querySelector('.volume-actions__mute');
 const resetButton = document.querySelector('.volume-actions__reset');
 const slider = document.querySelector('.volume-slider__slider');
 const currentVolume = document.querySelector('.volume-info__current b');
+const tabsContainer = document.querySelector('.tabs');
+const tabsTitle = document.querySelector('.tabs__title');
 const muteSVG = `
         <svg
           version="1.1"
@@ -89,6 +91,33 @@ chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
   }
 });
 
+chrome.tabs.query({ audible: true }, (tabs) => {
+  if (tabs.length === 0) return;
+
+  if (tabs.length > 0) {
+    tabsTitle.innerHTML = `<b>${formatTabsTitle(tabs.length)}</b>`;
+  }
+
+  tabs.forEach((tab) => {
+    const tabElement = document.createElement('div');
+    tabElement.classList.add('tab-item');
+    tabElement.innerHTML = `
+        <abbr title="${tab.title}">
+          <img src="${
+            tab.favIconUrl || 'icons/icon-32.png'
+          }" class="tab-icon" />
+          <span class="tab-title">${tab.title}</span>
+        </abbr>
+      `;
+
+    tabElement.addEventListener('click', () => {
+      chrome.tabs.update(tab.id, { active: true });
+    });
+
+    tabsContainer.appendChild(tabElement);
+  });
+});
+
 muteButton.addEventListener('click', async () => {
   const isMuted = muteButton.classList.toggle('muted');
 
@@ -109,6 +138,9 @@ slider.addEventListener('input', () => {
   updateVolumeForTab(volume);
   updateSliderUI();
 });
+
+const formatTabsTitle = (count) =>
+  `${count} ${count === 1 ? 'tab' : 'tabs'} playing now`;
 
 const updateSliderUI = () => {
   const min = slider.min;
