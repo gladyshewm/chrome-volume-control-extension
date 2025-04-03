@@ -208,13 +208,13 @@ const updateMuteUI = (isMuted) => {
 
   if (isMuted) {
     muteButton.classList.add('muted');
-    muteButton.innerHTML = `${unmuteSVG}<span>Unmute</span>`;
+    muteButton.innerHTML = `${muteSVG}<span>Unmute</span>`;
     slider.setAttribute('disabled', true);
-    headerTitle.innerHTML = `${unmuteSVG}<h1>Volume Control</h1>`;
+    headerTitle.innerHTML = `${muteSVG}<h1>Volume Control</h1>`;
   } else {
     muteButton.classList.remove('muted');
-    muteButton.innerHTML = `${muteSVG}<span>Mute</span>`;
+    muteButton.innerHTML = `${unmuteSVG}<span>Mute</span>`;
     slider.removeAttribute('disabled');
-    headerTitle.innerHTML = `${muteSVG}<h1>Volume Control</h1>`;
+    headerTitle.innerHTML = `${unmuteSVG}<h1>Volume Control</h1>`;
   }
 };
